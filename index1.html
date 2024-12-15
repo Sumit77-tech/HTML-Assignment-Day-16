@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paginate Users</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js"></script>
+</head>
+<body>
+  <h1>Paginate Users</h1>
+  <div id="user-list"></div>
+  <button onclick="goToPage('prev')">Previous</button>
+  <button onclick="goToPage('next')">Next</button>
+
+  <script>
+    // Firebase configuration (replace with your Firebase project details)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
+
+    const itemsPerPage = 5;
+    let currentPage = 1; // Track the current page
+    let totalUsers = []; // Store all users data
+    let totalPages = 0; // Store total number of pages
+
+    // Function to fetch and display users
+    const fetchUsers = () => {
+      database.ref('users').once('value')
+        .then(snapshot => {
+          totalUsers = snapshot.val();
+          totalPages = Math.ceil(Object.keys(totalUsers).length / itemsPerPage);
+          displayUsers();
+        })
+        .catch(error => {
+          console.error("Error fetching data from Firebase:", error);
+        });
+    };
+
+    // Function to display users on the current page
+    const displayUsers = () => {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const usersOnPage = Object.values(totalUsers).slice(start, end);
+
+      // Clear existing user list
+      const userListDiv = document.getElementById("user-list");
+      userListDiv.innerHTML = '';
+
+      // Display users
+      usersOnPage.forEach(user => {
+        const userDiv = document.createElement("div");
+        userDiv.textContent = `${user.name} - ${user.email}`;
+        userListDiv.appendChild(userDiv);
+      });
+
+      console.log(usersOnPage); // For console output
+
+      // Check if the page is valid and display proper messages
+      if (currentPage < 1 || currentPage > totalPages) {
+        console.log("Invalid page number.");
+      } else {
+        console.log(`Page ${currentPage} of ${totalPages}`);
+      }
+    };
+
+    // Function to go to the next or previous page
+    const goToPage = (direction) => {
+      if (direction === 'next' && currentPage < totalPages) {
+        currentPage++;
+      } else if (direction === 'prev' && currentPage > 1) {
+        currentPage--;
+      }
+      displayUsers();
+    };
+
+    // Initialize fetch on page load
+    fetchUsers();
+  </script>
+</body>
+</html>
