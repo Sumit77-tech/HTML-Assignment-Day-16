@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    .pagination {
+      margin-top: 20px;
+    }
+    .pagination button {
+      margin: 0 5px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>User Management App</h1>
+
+  <!-- Search Section -->
+  <div>
+    <input type="text" id="searchInput" placeholder="Search users by name" onkeyup="updateUsers()">
+  </div>
+  
+  <!-- Filter Section -->
+  <div>
+    <input type="text" id="domainFilter" placeholder="Filter by email domain" onkeyup="updateUsers()">
+  </div>
+  
+  <!-- User Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody id="userTable">
+      <!-- User data will be populated here -->
+    </tbody>
+  </table>
+  
+  <!-- Pagination Section -->
+  <div class="pagination">
+    <button id="prevPage" onclick="changePage(-1)">Previous</button>
+    <button id="nextPage" onclick="changePage(1)">Next</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
+
+    // State Variables
+    let usersData = [];
+    let currentPage = 1;
+    const itemsPerPage = 5;
+
+    // Fetch Users from Firebase
+    const fetchUsers = () => {
+      fetch('https://YOUR_PROJECT_ID.firebaseio.com/users.json')
+        .then(response => response.json())
+        .then(data => {
+          usersData = Object.entries(data).map(([id, user]) => ({ ...user, id }));
+          updateUsers();
+        })
+        .catch(error => console.error("Error fetching data:", error));
+    };
+
+    // Update Users List based on Search, Filter, and Pagination
+    const updateUsers = () => {
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+      const emailDomain = document.getElementById("domainFilter").value.toLowerCase();
+
+      // Filter users based on search term and email domain
+      let filteredUsers = usersData.filter(user => {
+        const matchesName = user.name.toLowerCase().includes(searchTerm);
+        const matchesDomain = user.email.toLowerCase().includes(emailDomain);
+        return matchesName && matchesDomain;
+      });
+
+      // Paginate the filtered users
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedUsers = filteredUsers.slice(start, end);
+
+      // Display users
+      const tableBody = document.getElementById("userTable");
+      tableBody.innerHTML = '';
+      paginatedUsers.forEach(user => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${user.name}</td><td>${user.email}</td>`;
+        tableBody.appendChild(row);
+      });
+
+      // Handle Pagination buttons visibility
+      const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+      document.getElementById("prevPage").style.display = currentPage > 1 ? 'inline' : 'none';
+      document.getElementById("nextPage").style.display = currentPage < totalPages ? 'inline' : 'none';
+    };
+
+    // Change Page (next/previous)
+    const changePage = (direction) => {
+      currentPage += direction;
+      updateUsers();
+    };
+
+    // Initialize the app
+    fetchUsers();
+  </script>
+</body>
+</html>
